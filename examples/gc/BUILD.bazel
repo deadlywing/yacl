@@ -1,0 +1,69 @@
+
+
+cc_library(
+    name = "mitccrh",
+    hdrs = [
+        "mitccrh.h",
+    ],
+    deps = ["//yacl/crypto/aes:aes_opt",
+    ":utils",
+    "//yacl/crypto/tools:crhash"],     
+    copts = ["-mavx","-maes","-mpclmul"]
+)
+
+cc_binary(
+    name = "test_ot",
+    srcs = ["test_ot.cc"],
+    deps = [
+        "//yacl/kernel/algorithms:iknp_ote",
+        "//yacl/crypto/rand",
+        "//yacl/link:test_util",
+    ],
+)
+ 
+
+
+cc_binary(
+    name = "test",
+    srcs = ["test.cc"],
+    deps = [
+         ":mitccrh", 
+         "//yacl/base:byte_container_view", 
+         "//yacl/base:dynamic_bitset", 
+         "//yacl/io/stream:file_io",
+         "//yacl/crypto/rand:rand", 
+         "//yacl/crypto/tools:prg", 
+         "//yacl/io/circuit:bristol_fashion", 
+         "//yacl/utils:circuit_executor",
+         "//yacl/kernel/algorithms:iknp_ote",
+         "//yacl/link:test_util",
+         "//yacl/kernel/algorithms:base_ot",
+         
+    ],
+    copts = ["-mavx","-maes","-mpclmul"]
+)
+
+cc_binary(
+    name = "sha256_",
+    srcs = ["sha256.cc"],
+    deps = [
+         ":mitccrh", 
+         "//yacl/base:byte_container_view", 
+         "//yacl/base:dynamic_bitset", 
+         "//yacl/crypto/block_cipher:symmetric_crypto",
+         "//yacl/crypto/hash:hash_utils",
+         "//yacl/crypto/rand:rand",
+         "//yacl/io/circuit:bristol_fashion", 
+         "//yacl/utils:circuit_executor",
+         
+         
+    ],
+    copts = ["-mavx","-maes","-mpclmul"]
+)
+
+cc_library(
+    name = "utils",
+    srcs = ["utils.cc"],
+    hdrs = ["utils.h"],
+    deps = [],
+)

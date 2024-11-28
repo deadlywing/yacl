@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "yacl/utils/circuit_executor.h"
-
+// using namespace std;
 namespace yacl {
 
 namespace {
@@ -32,22 +32,44 @@ void PlainExecutor<T>::LoadCircuitFile(const std::string& path) {
   circ_ = reader.StealCirc();
 }
 
+std::string dynamic_bitset_to_string(const dynamic_bitset<>& bits) {
+  std::string str(bits.size(), '0');  // 创建一个与位集大小相同的字符串
+  for (size_t i = 0; i < bits.size(); ++i) {
+    if (bits[i]) {
+      str[bits.size() - 1 - i] = '1';  // 反向填充字符串
+    }
+  }
+  return str;
+}
+
 template <typename T>
-void PlainExecutor<T>::SetupInputs(absl::Span<T> inputs) {
-  YACL_ENFORCE(inputs.size() == circ_->niv);
+void PlainExecutor<T>::SetupInputs(
+    absl::Span<T> inputs) {  // Span方便指针的使用
+  wires_.resize(circ_->nw);
   for (auto input : inputs) {
     wires_.append(input);
   }
-  wires_.resize(circ_->nw);
 }
 
 template <typename T>
 void PlainExecutor<T>::Exec() {
+  // wires_.resize(circ_->nw);
+  // for (int i = 2; i < 514; i++) {
+  //   wires_[i - 2] = wires_[i];
+  // }
+  // std::cout << "线路输入：";
+
+  // for (int i = 0; i < 768; i++) {
+  //   std::cout << wires_[i];
+  // }
+  // std::cout << std::endl;
+  // // cout << dynamic_bitset_to_string(wires_) << endl;
+  // cout << endl;
   // Evaluate all gates, sequentially
   for (const auto& gate : circ_->gates) {
     switch (gate.op) {
       case io::BFCircuit::Op::XOR: {
-        const auto& iw0 = wires_.operator[](gate.iw[0]);
+        const auto& iw0 = wires_.operator[](gate.iw[0]);  // 取到具体值
         const auto& iw1 = wires_.operator[](gate.iw[1]);
         wires_.set(gate.ow[0], PlaintextCore::xor_gate(iw0, iw1));
         break;
@@ -82,6 +104,44 @@ void PlainExecutor<T>::Exec() {
   }
 }
 
+// template <typename T>
+// void PlainExecutor<T>::Finalize(absl::Span<T> outputs) {
+//   YACL_ENFORCE(outputs.size() >= circ_->nov);
+
+//   size_t index = wires_.size();
+//   for (size_t i = 0; i < circ_->nov; ++i) {
+//     dynamic_bitset<T> result(circ_->now[i]);
+//     for (size_t j = 0; j < circ_->now[i]; ++j) {
+//       result[j] = wires_[index - circ_->now[i] +
+//                          j];  // 得到的是逆序的二进制值 对应的混淆电路计算为
+//                               // LSB ^ d  输出线路在后xx位
+//     }
+//     outputs[circ_->nov - i - 1] = *(uint8_t*)result.data();
+//     // outputs[circ_->nov - i - 1] = *(uint128_t*)result.data();
+//     index -= circ_->now[i];
+//   }
+// }
+
+// template <typename T>
+// void PlainExecutor<T>::Finalize(absl::Span<T> outputs) {
+//   // YACL_ENFORCE(outputs.size() >= circ_->nov);
+
+//   size_t index = wires_.size();
+
+//   for (size_t i = 0; i < 32; ++i) {
+//     dynamic_bitset<T> result(8);
+//     for (size_t j = 0; j < 8; ++j) {
+//       result[j] =
+//           wires_[index - 8 + j];  // 得到的是逆序的二进制值
+//           对应的混淆电路计算为
+//                                   // LSB ^ d  输出线路在后xx位
+//     }
+//     outputs[32 - i - 1] = *(uint8_t*)result.data();
+//     // outputs[circ_->nov - i - 1] = *(uint128_t*)result.data();
+//     index -= 8;
+//   }
+// }
+
 template <typename T>
 void PlainExecutor<T>::Finalize(absl::Span<T> outputs) {
   YACL_ENFORCE(outputs.size() >= circ_->nov);
@@ -97,7 +157,8 @@ void PlainExecutor<T>::Finalize(absl::Span<T> outputs) {
   }
 }
 
-template class PlainExecutor<uint64_t>;
+template class PlainExecutor<uint8_t>;
 template class PlainExecutor<uint128_t>;
+// template class PlainExecutor<Buffer>;
 
 }  // namespace yacl
